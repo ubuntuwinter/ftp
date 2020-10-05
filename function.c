@@ -1,5 +1,14 @@
 #include "custom.h"
 
+// 命令列表映射
+const char *cmdName[] = {
+    "USER", "PASS", "RETR", "STOR", "QUIT", "SYST",
+    "TYPE", "PORT", "PASV", "MKD", "CWD", "PWD", "LIST",
+    "RMD", "RNFR", "RNTO"};
+
+// 欢迎信息
+const char *welcome = "Anonymous FTP server ready.\r\n";
+
 // 获取命令对应的序号
 int getIndexInCmdList(char *cmd)
 {

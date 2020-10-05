@@ -56,15 +56,6 @@ typedef enum
     CMDLISTSIZE,
 } CmdList;
 
-// 命令列表映射
-static const char *cmdName[] = {
-    "USER", "PASS", "RETR", "STOR", "QUIT", "SYST",
-    "TYPE", "PORT", "PASV", "MKD", "CWD", "PWD", "LIST",
-    "RMD", "RNFR", "RNTO"};
-
-// 欢迎信息
-static const char *welcome = "Anonymous FTP server ready.\r\n";
-
 // server.c中定义的函数
 void argError(int argc, char **argv);                           // 参数错误处理
 int dealCmd(int argc, char **argv, int *port, char **rootPath); // 处理输入参数
