@@ -4,10 +4,13 @@
 const char *cmdName[] = {
     "USER", "PASS", "RETR", "STOR", "QUIT", "SYST",
     "TYPE", "PORT", "PASV", "MKD", "CWD", "PWD", "LIST",
-    "RMD", "RNFR", "RNTO"};
+    "RMD", "RNFR", "RNTO", "ABOR"};
 
 // 欢迎信息
 const char *welcome = "Anonymous FTP server ready.\r\n";
+
+// 日志文件
+const char *logFile = "./log";
 
 // 获取命令对应的序号
 int getIndexInCmdList(char *cmd)
@@ -25,7 +28,40 @@ int getIndexInCmdList(char *cmd)
 // 解析命令
 int parseCmd(Command *cmd, char *cmdString)
 {
+    writeLog(cmdString);
     return sscanf(cmdString, "%s %s", cmd->command, cmd->arg);
+}
+
+// 写日至文件
+void writeLog(char *cmdString)
+{
+    // 写入时间
+    static int writeTime = 0;
+
+    // 打开文件
+    FILE *file = fopen(logFile, "a");
+    if (file == NULL)
+    {
+        perror("Unable to open log file!");
+        return;
+    }
+
+    if (!writeTime)
+    {
+        // 写时间
+        time_t now;
+        struct tm *tm_now;
+        time(&now);
+        tm_now = localtime(&now);
+        fprintf(file, "\n%d-%d-%d %d:%d:%d\n", tm_now->tm_year + 1900, tm_now->tm_mon + 1, tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);
+        writeTime = 1;
+    }
+
+    // 写命令记录
+    fprintf(file, "%s\n", cmdString);
+
+    // 关闭文件
+    fclose(file);
 }
 
 // 发送字符串到socket
@@ -104,6 +140,9 @@ int response(Command *cmd, State *state, char *buffer)
         break;
     case PASS:
         code = ftpPASS(cmd, state, buffer);
+        break;
+    case SYST:
+        code = ftpSYST(cmd, state, buffer);
         break;
     default:
         if (writeCertainSentence(state->connection, buffer, "500 Invaild command.\r\n") < 0)
@@ -213,5 +252,28 @@ int ftpPASS(Command *cmd, State *state, char *buffer)
     }
 
     state->logged_in = 1;
+    return 0;
+}
+
+// 显示系统信息
+int ftpSYST(Command *cmd, State *state, char *buffer)
+{
+    // 判断是否登陆
+    if (!state->logged_in)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "530 Not logged in.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    // 回应信息
+    if (writeCertainSentence(state->connection, buffer,
+                             "215 UNIX Type: L8\r\n") < 0)
+    {
+        return -1;
+    }
     return 0;
 }

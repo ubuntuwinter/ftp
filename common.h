@@ -14,6 +14,7 @@
 #include <string.h>
 #include <memory.h>
 #include <stdio.h>
+#include <time.h>
 
 #define MAXBUF 1024 * 1024
 #define MAXCMD 1024 * 1024
@@ -53,6 +54,7 @@ typedef enum
     RMD,
     RNFR,
     RNTO,
+    ABOR,
     CMDLISTSIZE,
 } CmdList;
 
@@ -64,6 +66,7 @@ int initializeListenSocket(int port);                           // 初始化监�
 // function.c中定义的函数
 int getIndexInCmdList(char *cmd);                              // 获取命令对应的序号
 int parseCmd(Command *cmd, char *cmdString);                   // 解析命令
+void writeLog(char *cmdString);                                // 写日志文件
 int writeSentence(int connfd, char *buffer, int len);          // 发送字符串到socket
 int writeCertainSentence(int connfd, char *buffer, char *str); // 发送特定字符串
 int readSentence(int connfd, char *buffer);                    // 从socket接收字符串
@@ -72,5 +75,6 @@ int response(Command *cmd, State *state, char *buffer);        // 返回相应�
 int ftpWelcome(State *state, char *buffer);            // 发送欢迎信息
 int ftpUSER(Command *cmd, State *state, char *buffer); // 登陆
 int ftpPASS(Command *cmd, State *state, char *buffer); // 输入密码
+int ftpSYST(Command *cmd, State *state, char *buffer); // 显示系统信息
 
 #endif
