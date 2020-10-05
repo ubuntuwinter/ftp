@@ -1,4 +1,4 @@
-#include "custom.h" // include库文件与函数声明
+#include "common.h" // include库文件与函数声明
 
 int main(int argc, char **argv)
 {

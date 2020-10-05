@@ -1,4 +1,4 @@
-#include "custom.h"
+#include "common.h"
 
 // 命令列表映射
 const char *cmdName[] = {

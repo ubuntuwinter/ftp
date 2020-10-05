@@ -98,7 +98,6 @@ def test(port=21, directory='/tmp'):
             credit -= minor
         ftp2.quit()
     except Exception as e:
-        print 'Exception type:', repr(e)
         print 'Exception occurred:', e
         credit = 0
     server.kill()
