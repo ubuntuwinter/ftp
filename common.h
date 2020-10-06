@@ -8,6 +8,9 @@
 #include <arpa/inet.h>  /* IP address conversion stuff */
 #include <netdb.h>      /* gethostbyname */
 #include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/sendfile.h>
 
 #include <stdlib.h>
 #include <ctype.h>
@@ -17,7 +20,7 @@
 #include <time.h>
 
 #define MAXBUF 1024 * 1024
-#define MAXCMD 1024 * 1024
+#define MAXCMD 1024 * 1
 
 // 连接状态
 typedef struct
@@ -79,5 +82,6 @@ int ftpPASS(Command *cmd, State *state, char *buffer); // 输入密码
 int ftpSYST(Command *cmd, State *state, char *buffer); // 显示系统信息
 int ftpTYPE(Command *cmd, State *state, char *buffer); // 设置TYPE
 int ftpPORT(Command *cmd, State *state, char *buffer); // 设置主动模式
+int ftpRETR(Command *cmd, State *state, char *buffer); // 下载
 
 #endif

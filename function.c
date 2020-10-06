@@ -1,5 +1,8 @@
 #include "common.h"
 
+// 全局变量
+extern char *rootPath;
+
 // 命令列表映射
 const char *cmdName[] = {
     "USER", "PASS", "RETR", "STOR", "QUIT", "SYST",
@@ -149,6 +152,9 @@ int response(Command *cmd, State *state, char *buffer)
         break;
     case PORT:
         code = ftpPORT(cmd, state, buffer);
+        break;
+    case RETR:
+        code = ftpRETR(cmd, state, buffer);
         break;
     default:
         if (writeCertainSentence(state->connection, buffer, "500 Invaild command.\r\n") < 0)
@@ -348,4 +354,108 @@ int ftpPORT(Command *cmd, State *state, char *buffer)
         return -1;
     }
     return 0;
+}
+
+// 下载
+int ftpRETR(Command *cmd, State *state, char *buffer)
+{
+    // 判断是否登陆
+    if (!state->logged_in)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "530 Not logged in.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    // 判断是否确定模式
+    if (state->mode == -1)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "500 Not PORT NOR PASS.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    int conn;                // 连接
+    struct sockaddr_in addr; // 地址
+    char fileName[MAXCMD];   // 文件名
+    int file;                // 文件
+    int sendBytes;           // 传输的字节
+    struct stat stat_buf;    // buf
+    off_t off = 0;           // off
+
+    strcpy(fileName, rootPath);
+    strcat(fileName, "/");
+    strcat(fileName, cmd->arg);
+
+    if ((access(fileName, R_OK) == 0) && (file = open(fileName, O_RDONLY)))
+    {
+        fstat(file, &stat_buf);
+        // 回应150
+        if (writeCertainSentence(state->connection, buffer,
+                                 "150 Opening BINARY mode data connection.\r\n") < 0)
+        {
+            return -1;
+        }
+        /* 主动模式 */
+        if (state->mode == 0)
+        {
+            //创建socket
+            if ((conn = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1)
+            {
+                printf("Error socket(): %s(%d)\n", strerror(errno), errno);
+                return 1;
+            }
+            //设置目标主机的ip和port
+            memset(&addr, 0, sizeof(addr));
+            addr.sin_family = AF_INET;
+            addr.sin_port = htons(state->port);
+            if (inet_pton(AF_INET, state->ip, &addr.sin_addr) <= 0)
+            { //转换ip地址:点分十进制-->二进制
+                return -1;
+            }
+            // 连接目标主机
+            if (connect(conn, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+            {
+                return -1;
+            }
+            if (sendBytes = sendfile(conn, file, &off, stat_buf.st_size))
+            {
+                if (sendBytes != stat_buf.st_size)
+                {
+                }
+                else
+                {
+                    if (writeCertainSentence(state->connection, buffer,
+                                             "226 Transfer complete.\r\n") < 0)
+                    {
+                        return -1;
+                    }
+                }
+            }
+            else
+            {
+                if (writeCertainSentence(state->connection, buffer,
+                                         "550 File unavailable.\r\n") < 0)
+                {
+                    return -1;
+                }
+            }
+        }
+        close(file);
+        close(conn);
+    }
+    else
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "550 File unavailable.\r\n") < 0)
+        {
+            return -1;
+        }
+    }
 }

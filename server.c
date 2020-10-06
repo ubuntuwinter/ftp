@@ -1,10 +1,10 @@
 #include "common.h" // include库文件与函数声明
 
+int port = 21;			 // 默认端口号
+char *rootPath = "/tmp"; // 默认根目录文件夹
+
 int main(int argc, char **argv)
 {
-	int port = 21;			 // 默认端口号
-	char *rootPath = "/tmp"; // 默认根目录文件夹
-
 	if (!dealCmd(argc, argv, &port, &rootPath))
 	{
 		return 1;
