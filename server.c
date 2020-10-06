@@ -35,6 +35,7 @@ int main(int argc, char **argv)
 		memset(&state, 0, sizeof(State));
 		memset(&cmd, 0, sizeof(Command));
 
+		state.mode = -1;
 		state.connection = connfd;
 
 		if (ftpWelcome(&state, buffer) < 0)

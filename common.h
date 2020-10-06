@@ -75,5 +75,6 @@ int ftpWelcome(State *state, char *buffer);            // 发送欢迎信息
 int ftpUSER(Command *cmd, State *state, char *buffer); // 登陆
 int ftpPASS(Command *cmd, State *state, char *buffer); // 输入密码
 int ftpSYST(Command *cmd, State *state, char *buffer); // 显示系统信息
+int ftpTYPE(Command *cmd, State *state, char *buffer); // 设置TYPE
 
 #endif

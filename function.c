@@ -144,6 +144,9 @@ int response(Command *cmd, State *state, char *buffer)
     case SYST:
         code = ftpSYST(cmd, state, buffer);
         break;
+    case TYPE:
+        code = ftpTYPE(cmd, state, buffer);
+        break;
     default:
         if (writeCertainSentence(state->connection, buffer, "500 Invaild command.\r\n") < 0)
         {
@@ -272,6 +275,40 @@ int ftpSYST(Command *cmd, State *state, char *buffer)
     // 回应信息
     if (writeCertainSentence(state->connection, buffer,
                              "215 UNIX Type: L8\r\n") < 0)
+    {
+        return -1;
+    }
+    return 0;
+}
+
+// 设置TYPE
+int ftpTYPE(Command *cmd, State *state, char *buffer)
+{
+    // 判断是否登陆
+    if (!state->logged_in)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "530 Not logged in.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    // 判断是否是TYPE I
+    if (strcmp(cmd->arg, "I") != 0)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "504 Not supported parameter.\r\n") < 0)
+        {
+            return -1;
+        };
+        return 0;
+    }
+
+    // 回应消息
+    if (writeCertainSentence(state->connection, buffer,
+                             "200 Type set to I.\r\n") < 0)
     {
         return -1;
     }
