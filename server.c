@@ -185,4 +185,5 @@ void *createFTP(void *arg)
 	}
 
 	close(connfd);
+	return NULL;
 }
