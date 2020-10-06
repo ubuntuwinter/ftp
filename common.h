@@ -18,6 +18,7 @@
 #include <memory.h>
 #include <stdio.h>
 #include <time.h>
+#include <pthread.h>
 
 #define MAXBUF 1024 * 1024
 #define MAXCMD 1024 * 1
@@ -66,6 +67,7 @@ typedef enum
 void argError(int argc, char **argv);                           // 参数错误处理
 int dealCmd(int argc, char **argv, int *port, char **rootPath); // 处理输入参数
 int initializeListenSocket(int port);                           // 初始化监听Socket
+void *createFTP(void *arg);                                     // 创建FTP会话
 
 // function.c中定义的函数
 int getIndexInCmdList(char *cmd);                              // 获取命令对应的序号

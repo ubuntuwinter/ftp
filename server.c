@@ -27,37 +27,12 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-		char buffer[MAXBUF]; // 缓存
-		State state;		 // 服务状态
-		Command cmd;		 // 命令
-
-		memset(buffer, 0, MAXBUF);
-		memset(&state, 0, sizeof(State));
-		memset(&cmd, 0, sizeof(Command));
-
-		state.mode = -1;
-		state.connection = connfd;
-
-		if (ftpWelcome(&state, buffer) < 0)
+		pthread_t th;
+		if (pthread_create(&th, NULL, createFTP, &connfd) != 0)
 		{
-			close(connfd);
-			return 1;
+			printf("Create thread error!\n");
+			return -1;
 		}
-
-		while (readSentence(connfd, buffer) >= 0)
-		{
-			if (parseCmd(&cmd, buffer) == 0)
-			{
-				continue;
-			};
-			if (response(&cmd, &state, buffer) < 0)
-			{
-				close(connfd);
-				return 1;
-			}
-		}
-
-		close(connfd);
 	}
 
 	close(listenfd);
@@ -173,4 +148,41 @@ int initializeListenSocket(int port)
 	}
 
 	return listenfd;
+}
+
+// 创建FTP会话
+void *createFTP(void *arg)
+{
+	int connfd = *(int *)arg; // 连接
+	char buffer[MAXBUF];	  // 缓存
+	State state;			  // 服务状态
+	Command cmd;			  // 命令
+
+	memset(buffer, 0, MAXBUF);
+	memset(&state, 0, sizeof(State));
+	memset(&cmd, 0, sizeof(Command));
+
+	state.mode = -1;
+	state.connection = connfd;
+
+	if (ftpWelcome(&state, buffer) < 0)
+	{
+		close(connfd);
+		return NULL;
+	}
+
+	while (readSentence(connfd, buffer) >= 0)
+	{
+		if (parseCmd(&cmd, buffer) == 0)
+		{
+			continue;
+		};
+		if (response(&cmd, &state, buffer) < 0)
+		{
+			close(connfd);
+			return NULL;
+		}
+	}
+
+	close(connfd);
 }
