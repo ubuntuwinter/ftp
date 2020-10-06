@@ -25,6 +25,8 @@ typedef struct
     int inputAnonymous; // 是否输入Anonymous
     int logged_in;      // 1 if logged in
     int mode;           // 0 for port & 1 for pasv
+    char ip[17];        // ip地址
+    int port;           // portNumber client gives
     int connection;     // connfd
 } State;
 
@@ -76,5 +78,6 @@ int ftpUSER(Command *cmd, State *state, char *buffer); // 登陆
 int ftpPASS(Command *cmd, State *state, char *buffer); // 输入密码
 int ftpSYST(Command *cmd, State *state, char *buffer); // 显示系统信息
 int ftpTYPE(Command *cmd, State *state, char *buffer); // 设置TYPE
+int ftpPORT(Command *cmd, State *state, char *buffer); // 设置主动模式
 
 #endif

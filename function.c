@@ -147,6 +147,9 @@ int response(Command *cmd, State *state, char *buffer)
     case TYPE:
         code = ftpTYPE(cmd, state, buffer);
         break;
+    case PORT:
+        code = ftpPORT(cmd, state, buffer);
+        break;
     default:
         if (writeCertainSentence(state->connection, buffer, "500 Invaild command.\r\n") < 0)
         {
@@ -309,6 +312,38 @@ int ftpTYPE(Command *cmd, State *state, char *buffer)
     // 回应消息
     if (writeCertainSentence(state->connection, buffer,
                              "200 Type set to I.\r\n") < 0)
+    {
+        return -1;
+    }
+    return 0;
+}
+
+// 设置主动模式
+int ftpPORT(Command *cmd, State *state, char *buffer)
+{
+    // 判断是否登陆
+    if (!state->logged_in)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "530 Not logged in.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    int ip1, ip2, ip3, ip4, p1, p2;
+    if (sscanf(cmd->arg, "%d,%d,%d,%d,%d,%d", &ip1, &ip2, &ip3, &ip4, &p1, &p2) != 6)
+    {
+        return -1;
+    }
+    state->mode = 0;
+    sprintf(state->ip, "%d.%d.%d.%d", ip1, ip2, ip3, ip4);
+    state->port = p1 * 256 + p2;
+
+    // 回应消息
+    if (writeCertainSentence(state->connection, buffer,
+                             "200 PORT command successful.\r\n") < 0)
     {
         return -1;
     }
