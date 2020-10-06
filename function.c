@@ -153,6 +153,9 @@ int response(Command *cmd, State *state, char *buffer)
     case PORT:
         code = ftpPORT(cmd, state, buffer);
         break;
+    case PASV:
+        code = ftpPASV(cmd, state, buffer);
+        break;
     case RETR:
         code = ftpRETR(cmd, state, buffer);
         break;
@@ -353,6 +356,43 @@ int ftpPORT(Command *cmd, State *state, char *buffer)
     {
         return -1;
     }
+    return 0;
+}
+
+// 设置被动模式
+int ftpPASV(Command *cmd, State *state, char *buffer)
+{
+    // 判断是否登陆
+    if (!state->logged_in)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "530 Not logged in.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    int port1 = 128 + (rand() % 64);
+    int port2 = rand() % 256;
+    int ip1, ip2, ip3, ip4;
+    struct sockaddr_in addr;
+    socklen_t addr_size = sizeof(struct sockaddr_in);
+    getsockname(state->connection, (struct sockaddr *)&addr, &addr_size);
+    sscanf(inet_ntoa(addr.sin_addr), "%d.%d.%d.%d", &ip1, &ip2, &ip3, &ip4);
+
+    strcpy(buffer, "227 Entering Passive Mode (");
+    sprintf(buffer + strlen(buffer), "%d,%d,%d,%d,%d,%d)\r\n", ip1, ip2, ip3, ip4, port1, port2);
+
+    if (writeSentence(state->connection, buffer, strlen(buffer)) < 0)
+    {
+        return -1;
+    }
+    if ((state->passive_connection = initializeListenSocket(port1 * 256 + port2)) < 0)
+    {
+        return -1;
+    }
+    state->mode = 1;
     return 0;
 }
 
