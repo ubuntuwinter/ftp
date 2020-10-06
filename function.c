@@ -4,7 +4,7 @@
 const char *cmdName[] = {
     "USER", "PASS", "RETR", "STOR", "QUIT", "SYST",
     "TYPE", "PORT", "PASV", "MKD", "CWD", "PWD", "LIST",
-    "RMD", "RNFR", "RNTO", "ABOR"};
+    "RMD", "RNFR", "RNTO"};
 
 // 欢迎信息
 const char *welcome = "Anonymous FTP server ready.\r\n";

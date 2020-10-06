@@ -54,7 +54,6 @@ typedef enum
     RMD,
     RNFR,
     RNTO,
-    ABOR,
     CMDLISTSIZE,
 } CmdList;
 
