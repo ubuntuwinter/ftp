@@ -39,7 +39,6 @@ int main(int argc, char **argv)
 
 	printf("port: %d\n", port);
 	printf("root: %s\n", rootPath);
-
 	return 0;
 }
 
@@ -104,6 +103,7 @@ int dealCmd(int argc, char **argv, int *port, char **rootPath)
 			}
 		}
 	}
+	return 1;
 }
 
 // 初始化监听Socket
