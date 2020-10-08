@@ -437,8 +437,9 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
     strcat(fileName, "/");
     strcat(fileName, cmd->arg);
 
-    if ((access(fileName, R_OK) == 0) && (file = open(fileName, O_RDONLY)))
+    if ((access(fileName, R_OK) != -1) && (file = open(fileName, O_RDONLY)) != -1)
     {
+        file = open(fileName, O_RDONLY);
         fstat(file, &stat_buf);
         // 回应150
         if (writeCertainSentence(state->connection, buffer,
@@ -468,27 +469,33 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
             {
                 return -1;
             }
-            if (sendBytes = sendfile(conn, file, &off, stat_buf.st_size))
+        }
+        /* 被动模式 */
+        else
+        {
+            conn = accept(state->passive_connection, NULL, NULL);
+        }
+        // 传输文件
+        if (sendBytes = sendfile(conn, file, &off, stat_buf.st_size))
+        {
+            if (sendBytes != stat_buf.st_size)
             {
-                if (sendBytes != stat_buf.st_size)
-                {
-                }
-                else
-                {
-                    if (writeCertainSentence(state->connection, buffer,
-                                             "226 Transfer complete.\r\n") < 0)
-                    {
-                        return -1;
-                    }
-                }
             }
             else
             {
                 if (writeCertainSentence(state->connection, buffer,
-                                         "550 File unavailable.\r\n") < 0)
+                                         "226 Transfer complete.\r\n") < 0)
                 {
                     return -1;
                 }
+            }
+        }
+        else
+        {
+            if (writeCertainSentence(state->connection, buffer,
+                                     "550 File unavailable.\r\n") < 0)
+            {
+                return -1;
             }
         }
         close(file);
@@ -503,3 +510,5 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
         }
     }
 }
+
+// 上传
