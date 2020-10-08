@@ -896,3 +896,53 @@ int ftpRMD(Command *cmd, State *state, char *buffer)
     }
     return 0;
 }
+
+// 重命名FROM
+int ftpRNFR(Command *cmd, State *state, char *buffer)
+{
+    // 判断是否登陆
+    if (!state->logged_in)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "530 Not logged in.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    strcpy(state->filename, cmd->arg);
+    return 0;
+}
+
+// 重命名TO
+int ftpRNTO(Command *cmd, State *state, char *buffer)
+{
+    // 判断是否登陆
+    if (!state->logged_in)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "530 Not logged in.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    if (rename(state->filename, cmd->arg) == -1)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "550 Cannot rename file.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    if (writeCertainSentence(state->connection, buffer,
+                             "250 Successfully rename file.\r\n") < 0)
+    {
+        return -1;
+    }
+    return 0;
+}

@@ -35,6 +35,7 @@ typedef struct
     int port;               // portNumber client gives
     int connection;         // connfd
     int passive_connection; // passive_connection
+    char filename[MAXCMD];  // rename file
 } State;
 
 // 命令
@@ -96,7 +97,7 @@ int ftpCWD(Command *cmd, State *state, char *buffer);  // 进入文件夹
 int ftpPWD(Command *cmd, State *state, char *buffer);  // 显示当前目录
 int ftpLIST(Command *cmd, State *state, char *buffer); // 显示当前目录下文件
 int ftpRMD(Command *cmd, State *state, char *buffer);  // 删除文件夹
-int ftpRNFR(Command *cmd, State *state, char *buffer); // 退出
-int ftpRNTO(Command *cmd, State *state, char *buffer); // 退出
+int ftpRNFR(Command *cmd, State *state, char *buffer); // 重命名FROM
+int ftpRNTO(Command *cmd, State *state, char *buffer); // 重命名TO
 
 #endif
