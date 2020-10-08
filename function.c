@@ -162,6 +162,9 @@ int response(Command *cmd, State *state, char *buffer)
     case STOR:
         code = ftpSTOR(cmd, state, buffer);
         break;
+    case QUIT:
+        code = ftpQUIT(cmd, state, buffer);
+        break;
     default:
         if (writeCertainSentence(state->connection, buffer, "500 Invaild command.\r\n") < 0)
         {
@@ -630,6 +633,29 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
         {
             return -1;
         }
+    }
+    return 0;
+}
+
+// 退出
+int ftpQUIT(Command *cmd, State *state, char *buffer)
+{
+    // 判断是否登陆
+    if (!state->logged_in)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "530 Not logged in.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    // 回应消息
+    if (writeCertainSentence(state->connection, buffer,
+                             "221 GoodBye.\r\n") < 0)
+    {
+        return -1;
     }
     return 0;
 }
