@@ -347,8 +347,10 @@ int ftpPORT(Command *cmd, State *state, char *buffer)
         return 0;
     }
 
+    // 关闭连接
     close(state->passive_connection);
 
+    // 解码保存到状态
     int ip1, ip2, ip3, ip4, p1, p2;
     if (sscanf(cmd->arg, "%d,%d,%d,%d,%d,%d", &ip1, &ip2, &ip3, &ip4, &p1, &p2) != 6)
     {
@@ -381,28 +383,34 @@ int ftpPASV(Command *cmd, State *state, char *buffer)
         return 0;
     }
 
+    // 关闭之前的连接
     close(state->passive_connection);
 
+    // 初始化句子信息
     int port1 = 128 + (rand() % 64);
     int port2 = rand() % 256;
     int ip1, ip2, ip3, ip4;
     struct sockaddr_in addr;
     socklen_t addr_size = sizeof(struct sockaddr_in);
     getsockname(state->connection, (struct sockaddr *)&addr, &addr_size);
-    sscanf(inet_ntoa(addr.sin_addr), "%d.%d.%d.%d", &ip1, &ip2, &ip3, &ip4);
 
+    sscanf(inet_ntoa(addr.sin_addr), "%d.%d.%d.%d", &ip1, &ip2, &ip3, &ip4);
     strcpy(buffer, "227 Entering Passive Mode (");
     sprintf(buffer + strlen(buffer), "%d,%d,%d,%d,%d,%d)\r\n", ip1, ip2, ip3, ip4, port1, port2);
 
-    if (writeSentence(state->connection, buffer, strlen(buffer)) < 0)
-    {
-        return -1;
-    }
+    // 建立连接
     if ((state->passive_connection = initializeListenSocket(port1 * 256 + port2)) < 0)
     {
         return -1;
     }
     state->mode = 1;
+
+    // 回应消息
+    if (writeSentence(state->connection, buffer, strlen(buffer)) < 0)
+    {
+        return -1;
+    }
+
     return 0;
 }
 
@@ -439,13 +447,14 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
     struct stat stat_buf;    // buf
     off_t off = 0;           // off
 
+    // 文件路径需要加上文件夹名
     strcpy(fileName, rootPath);
     strcat(fileName, "/");
     strcat(fileName, cmd->arg);
 
+    // 首先判断权限与打开文件流
     if ((access(fileName, R_OK) != -1) && (file = open(fileName, O_RDONLY)) != -1)
     {
-        fstat(file, &stat_buf);
         // 回应150
         if (writeCertainSentence(state->connection, buffer,
                                  "150 Opening BINARY mode data connection.\r\n") < 0)
@@ -484,10 +493,18 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
             close(state->passive_connection);
         }
         // 传输文件
+        fstat(file, &stat_buf);
         if (sendBytes = sendfile(conn, file, &off, stat_buf.st_size))
         {
             if (sendBytes != stat_buf.st_size)
             {
+                if (writeCertainSentence(state->connection, buffer,
+                                         "550 File unavailable.\r\n") < 0)
+                {
+                    close(file);
+                    close(conn);
+                    return -1;
+                }
             }
             else
             {
@@ -500,6 +517,7 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
                 }
             }
         }
+        // 传输失败
         else
         {
             if (writeCertainSentence(state->connection, buffer,
@@ -513,6 +531,7 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
         close(file);
         close(conn);
     }
+    // 文件问题
     else
     {
         if (writeCertainSentence(state->connection, buffer,
@@ -555,6 +574,7 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
     int file;                // 文件
     int pipefd[2];           // 管道
 
+    // 文件路径加上文件夹名
     strcpy(fileName, rootPath);
     strcat(fileName, "/");
     strcat(fileName, cmd->arg);
@@ -563,6 +583,7 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
     FILE *fp = fopen(fileName, "w");
     fclose(fp);
 
+    // 先判断文件权限
     if ((access(fileName, W_OK) != -1) && (file = open(fileName, O_WRONLY)) != -1)
     {
         // 回应125
@@ -641,6 +662,7 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
         close(file);
         close(conn);
     }
+    // 文件错误
     else
     {
         if (writeCertainSentence(state->connection, buffer,
@@ -655,22 +677,11 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
 // 退出
 int ftpQUIT(Command *cmd, State *state, char *buffer)
 {
-    // 判断是否登陆
-    if (!state->logged_in)
-    {
-        if (writeCertainSentence(state->connection, buffer,
-                                 "530 Not logged in.\r\n") < 0)
-        {
-            return -1;
-        }
-        return 0;
-    }
-
     // 回应消息
     if (writeCertainSentence(state->connection, buffer,
                              "221 GoodBye.\r\n") < 0)
     {
         return -1;
     }
-    return 0;
+    return 1;
 }

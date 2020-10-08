@@ -177,10 +177,10 @@ void *createFTP(void *arg)
 		{
 			continue;
 		};
-		if (response(&cmd, &state, buffer) < 0)
+		if (response(&cmd, &state, buffer) == 1)
 		{
-			close(connfd);
-			return NULL;
+			writeLog("Success complete a FTP session.");
+			break;
 		}
 	}
 
