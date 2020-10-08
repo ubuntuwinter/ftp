@@ -156,6 +156,27 @@ int response(Command *cmd, State *state, char *buffer)
     case QUIT:
         code = ftpQUIT(cmd, state, buffer);
         break;
+    case MKD:
+        code = ftpMKD(cmd, state, buffer);
+        break;
+    case CWD:
+        code = ftpCWD(cmd, state, buffer);
+        break;
+    case PWD:
+        code = ftpPWD(cmd, state, buffer);
+        break;
+    case LIST:
+        code = ftpLIST(cmd, state, buffer);
+        break;
+    case RMD:
+        code = ftpRMD(cmd, state, buffer);
+        break;
+    case RNFR:
+        code = ftpRNFR(cmd, state, buffer);
+        break;
+    case RNTO:
+        code = ftpRNTO(cmd, state, buffer);
+        break;
     default:
         if (writeCertainSentence(state->connection, buffer, "500 Invaild command.\r\n") < 0)
         {
