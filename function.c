@@ -159,6 +159,9 @@ int response(Command *cmd, State *state, char *buffer)
     case RETR:
         code = ftpRETR(cmd, state, buffer);
         break;
+    case STOR:
+        code = ftpSTOR(cmd, state, buffer);
+        break;
     default:
         if (writeCertainSentence(state->connection, buffer, "500 Invaild command.\r\n") < 0)
         {
@@ -439,7 +442,6 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
 
     if ((access(fileName, R_OK) != -1) && (file = open(fileName, O_RDONLY)) != -1)
     {
-        file = open(fileName, O_RDONLY);
         fstat(file, &stat_buf);
         // 回应150
         if (writeCertainSentence(state->connection, buffer,
@@ -474,6 +476,7 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
         else
         {
             conn = accept(state->passive_connection, NULL, NULL);
+            close(state->passive_connection);
         }
         // 传输文件
         if (sendBytes = sendfile(conn, file, &off, stat_buf.st_size))
@@ -509,6 +512,124 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
             return -1;
         }
     }
+    return 0;
 }
 
 // 上传
+int ftpSTOR(Command *cmd, State *state, char *buffer)
+{
+    // 判断是否登陆
+    if (!state->logged_in)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "530 Not logged in.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    // 判断是否确定模式
+    if (state->mode == -1)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "500 Not PORT NOR PASS.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    int conn;                // 连接
+    struct sockaddr_in addr; // 地址
+    char fileName[MAXCMD];   // 文件名
+    int file;                // 文件
+    int pipefd[2];           // 管道
+
+    strcpy(fileName, rootPath);
+    strcat(fileName, "/");
+    strcat(fileName, cmd->arg);
+
+    // 创建文件
+    FILE *fp = fopen(fileName, "w");
+    fclose(fp);
+
+    if ((access(fileName, W_OK) != -1) && (file = open(fileName, O_WRONLY)) != -1)
+    {
+        // 回应125
+        if (writeCertainSentence(state->connection, buffer,
+                                 "125 Data connection already open; transfer starting.\r\n") < 0)
+        {
+            return -1;
+        }
+        /* 主动模式 */
+        if (state->mode == 0)
+        {
+            //创建socket
+            if ((conn = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1)
+            {
+                printf("Error socket(): %s(%d)\n", strerror(errno), errno);
+                return 1;
+            }
+            //设置目标主机的ip和port
+            memset(&addr, 0, sizeof(addr));
+            addr.sin_family = AF_INET;
+            addr.sin_port = htons(state->port);
+            if (inet_pton(AF_INET, state->ip, &addr.sin_addr) <= 0)
+            { //转换ip地址:点分十进制-->二进制
+                return -1;
+            }
+            // 连接目标主机
+            if (connect(conn, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+            {
+                return -1;
+            }
+        }
+        /* 被动模式 */
+        else
+        {
+            conn = accept(state->passive_connection, NULL, NULL);
+            close(state->passive_connection);
+        }
+        // 传输文件
+        if (pipe(pipefd) == -1)
+        {
+            if (writeCertainSentence(state->connection, buffer,
+                                     "550 Pipe error.\r\n") < 0)
+            {
+                return -1;
+            }
+        }
+        else
+        {
+            int res = 1;
+            while (res = splice(conn, 0, pipefd[1], NULL, 8192, SPLICE_F_MORE | SPLICE_F_MOVE) > 0)
+            {
+                splice(pipefd[0], NULL, file, 0, 8192, SPLICE_F_MORE | SPLICE_F_MOVE);
+            }
+            if (res == -1)
+            {
+                return -1;
+            }
+            else
+            {
+                if (writeCertainSentence(state->connection, buffer,
+                                         "226 Transfer complete.\r\n") < 0)
+                {
+                    return -1;
+                }
+            }
+        }
+        close(file);
+        close(conn);
+    }
+    else
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "550 File unavailable.\r\n") < 0)
+        {
+            return -1;
+        }
+    }
+    return 0;
+}

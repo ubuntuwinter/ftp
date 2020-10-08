@@ -1,6 +1,8 @@
 #ifndef __CUSTOM_H__
 #define __CUSTOM_H__
 
+#define _GNU_SOURCE
+
 #include <unistd.h>     /* defines STDIN_FILENO, system calls,etc */
 #include <sys/types.h>  /* system data type definitions */
 #include <sys/socket.h> /* socket specific definitions */
@@ -87,5 +89,7 @@ int ftpTYPE(Command *cmd, State *state, char *buffer); // 设置TYPE
 int ftpPORT(Command *cmd, State *state, char *buffer); // 设置主动模式
 int ftpPASV(Command *cmd, State *state, char *buffer); // 设置被动模式
 int ftpRETR(Command *cmd, State *state, char *buffer); // 下载
+int ftpSTOR(Command *cmd, State *state, char *buffer); // 上传
+int ftpQUIT(Command *cmd, State *state, char *buffer); // 退出
 
 #endif
