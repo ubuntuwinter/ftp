@@ -458,8 +458,8 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
             //创建socket
             if ((conn = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1)
             {
-                printf("Error socket(): %s(%d)\n", strerror(errno), errno);
-                return 1;
+                close(file);
+                return -1;
             }
             //设置目标主机的ip和port
             memset(&addr, 0, sizeof(addr));
@@ -467,11 +467,13 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
             addr.sin_port = htons(state->port);
             if (inet_pton(AF_INET, state->ip, &addr.sin_addr) <= 0)
             { //转换ip地址:点分十进制-->二进制
+                close(file);
                 return -1;
             }
             // 连接目标主机
             if (connect(conn, (struct sockaddr *)&addr, sizeof(addr)) < 0)
             {
+                close(file);
                 return -1;
             }
         }
@@ -492,6 +494,8 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
                 if (writeCertainSentence(state->connection, buffer,
                                          "226 Transfer complete.\r\n") < 0)
                 {
+                    close(file);
+                    close(conn);
                     return -1;
                 }
             }
@@ -501,6 +505,8 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
             if (writeCertainSentence(state->connection, buffer,
                                      "550 File unavailable.\r\n") < 0)
             {
+                close(file);
+                close(conn);
                 return -1;
             }
         }
@@ -563,6 +569,7 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
         if (writeCertainSentence(state->connection, buffer,
                                  "125 Data connection already open; transfer starting.\r\n") < 0)
         {
+            close(file);
             return -1;
         }
         /* 主动模式 */
@@ -571,8 +578,8 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
             //创建socket
             if ((conn = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1)
             {
-                printf("Error socket(): %s(%d)\n", strerror(errno), errno);
-                return 1;
+                close(file);
+                return -1;
             }
             //设置目标主机的ip和port
             memset(&addr, 0, sizeof(addr));
@@ -580,11 +587,13 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
             addr.sin_port = htons(state->port);
             if (inet_pton(AF_INET, state->ip, &addr.sin_addr) <= 0)
             { //转换ip地址:点分十进制-->二进制
+                close(file);
                 return -1;
             }
             // 连接目标主机
             if (connect(conn, (struct sockaddr *)&addr, sizeof(addr)) < 0)
             {
+                close(file);
                 return -1;
             }
         }
@@ -600,6 +609,8 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
             if (writeCertainSentence(state->connection, buffer,
                                      "550 Pipe error.\r\n") < 0)
             {
+                close(file);
+                close(conn);
                 return -1;
             }
         }
@@ -612,6 +623,8 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
             }
             if (res == -1)
             {
+                close(file);
+                close(conn);
                 return -1;
             }
             else
@@ -619,6 +632,8 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
                 if (writeCertainSentence(state->connection, buffer,
                                          "226 Transfer complete.\r\n") < 0)
                 {
+                    close(file);
+                    close(conn);
                     return -1;
                 }
             }
