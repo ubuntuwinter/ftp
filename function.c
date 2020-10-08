@@ -706,7 +706,12 @@ int ftpMKD(Command *cmd, State *state, char *buffer)
     char cwd[MAXCMD];
     if (getcwd(cwd, MAXCMD) == NULL)
     {
-        return -1;
+        if (writeCertainSentence(state->connection, buffer,
+                                 "550 Failed to create directory. Check path or permissions.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
     };
     if (mkdir(cmd->arg, S_IRWXU) == 0)
     {
@@ -756,7 +761,12 @@ int ftpCWD(Command *cmd, State *state, char *buffer)
     char cwd[MAXCMD];
     if (getcwd(cwd, MAXCMD) == NULL)
     {
-        return -1;
+        if (writeCertainSentence(state->connection, buffer,
+                                 "550 Failed to change directory.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
     };
 
     // 判断..
@@ -794,4 +804,38 @@ int ftpCWD(Command *cmd, State *state, char *buffer)
     return 0;
 }
 
+// 显示当前目录
+int ftpPWD(Command *cmd, State *state, char *buffer)
+{
+    // 判断是否登陆
+    if (!state->logged_in)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "332 Need account for login.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    // 获取当前目录
+    char cwd[MAXCMD];
+    if (getcwd(cwd, MAXCMD) == NULL)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "550 Failed to print directory.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    };
+
+    // 回应消息
+    sprintf(buffer, "257 \"%s\"\r\n", cwd);
+    if (writeSentence(state->connection, buffer, strlen(buffer)))
+    {
+        return -1;
+    }
+    return 0;
+}
 //
