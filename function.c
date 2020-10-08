@@ -456,7 +456,6 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
     int file;                // 文件
     int sendBytes;           // 传输的字节
     struct stat stat_buf;    // buf
-    off_t off = 0;           // off
 
     // 文件路径需要加上文件夹名
     // strcpy(fileName, rootPath);
@@ -505,7 +504,7 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
         }
         // 传输文件
         fstat(file, &stat_buf);
-        if (sendBytes = sendfile(conn, file, &off, stat_buf.st_size))
+        if (sendBytes = sendfile(conn, file, NULL, stat_buf.st_size))
         {
             if (sendBytes != stat_buf.st_size)
             {
