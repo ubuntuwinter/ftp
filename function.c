@@ -85,8 +85,7 @@ int writeSentence(int connfd, char *buffer, int len)
 int writeCertainSentence(int connfd, char *buffer, char *str)
 {
     strcpy(buffer, str);
-    int len = strlen(buffer);
-    return writeSentence(connfd, buffer, len);
+    return writeSentence(connfd, buffer, strlen(buffer));
 }
 
 // 从socket接收字符串
@@ -178,9 +177,8 @@ int ftpWelcome(State *state, char *buffer)
 {
     strcpy(buffer, "220 ");
     strcat(buffer, welcome);
-    int len = strlen(buffer);
     // 发送字符串到socket
-    if (writeSentence(state->connection, buffer, len) < 0)
+    if (writeSentence(state->connection, buffer, strlen(buffer)) < 0)
     {
         return -1;
     }
@@ -277,7 +275,7 @@ int ftpSYST(Command *cmd, State *state, char *buffer)
     if (!state->logged_in)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "530 Not logged in.\r\n") < 0)
+                                 "332 Need account for login.\r\n") < 0)
         {
             return -1;
         }
@@ -300,7 +298,7 @@ int ftpTYPE(Command *cmd, State *state, char *buffer)
     if (!state->logged_in)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "530 Not logged in.\r\n") < 0)
+                                 "332 Need account for login.\r\n") < 0)
         {
             return -1;
         }
@@ -334,7 +332,7 @@ int ftpPORT(Command *cmd, State *state, char *buffer)
     if (!state->logged_in)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "530 Not logged in.\r\n") < 0)
+                                 "332 Need account for login.\r\n") < 0)
         {
             return -1;
         }
@@ -370,7 +368,7 @@ int ftpPASV(Command *cmd, State *state, char *buffer)
     if (!state->logged_in)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "530 Not logged in.\r\n") < 0)
+                                 "332 Need account for login.\r\n") < 0)
         {
             return -1;
         }
@@ -415,7 +413,7 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
     if (!state->logged_in)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "530 Not logged in.\r\n") < 0)
+                                 "332 Need account for login.\r\n") < 0)
         {
             return -1;
         }
@@ -544,7 +542,7 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
     if (!state->logged_in)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "530 Not logged in.\r\n") < 0)
+                                 "332 Need account for login.\r\n") < 0)
         {
             return -1;
         }
@@ -678,4 +676,55 @@ int ftpQUIT(Command *cmd, State *state, char *buffer)
         return -1;
     }
     return 1;
+}
+
+// 创建文件夹
+int ftpMKD(Command *cmd, State *state, char *buffer)
+{
+    // 判断是否登陆
+    if (!state->logged_in)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "332 Need account for login.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    if (cmd->arg[0] == '/')
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "550 Failed to create directory. Check path or permissions.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    // 文件夹路径
+    char dirName[MAXCMD];
+    strcpy(dirName, rootPath);
+    strcat(dirName, "/");
+    strcat(dirName, cmd->arg);
+
+    if (mkdir(dirName, S_IRWXU) == 0)
+    {
+        strcpy(buffer, "257 \"");
+        strcat(buffer, dirName);
+        strcat(buffer, "\" directory created.\r\n");
+        if (writeSentence(state->connection, buffer, strlen(buffer)) < 0)
+        {
+            return -1;
+        }
+    }
+    else
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "550 Failed to create directory. Check path or permissions.\r\n") < 0)
+        {
+            return -1;
+        }
+    }
+    return 0;
 }

@@ -91,5 +91,12 @@ int ftpPASV(Command *cmd, State *state, char *buffer); // 设置被动模式
 int ftpRETR(Command *cmd, State *state, char *buffer); // 下载
 int ftpSTOR(Command *cmd, State *state, char *buffer); // 上传
 int ftpQUIT(Command *cmd, State *state, char *buffer); // 退出
+int ftpMKD(Command *cmd, State *state, char *buffer);  // 创建文件夹
+int ftpCWD(Command *cmd, State *state, char *buffer);  // 退出
+int ftpPWD(Command *cmd, State *state, char *buffer);  // 退出
+int ftpLIST(Command *cmd, State *state, char *buffer); // 退出
+int ftpRMD(Command *cmd, State *state, char *buffer);  // 退出
+int ftpRNFR(Command *cmd, State *state, char *buffer); // 退出
+int ftpRNTO(Command *cmd, State *state, char *buffer); // 退出
 
 #endif
