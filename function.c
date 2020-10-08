@@ -273,7 +273,7 @@ int ftpSYST(Command *cmd, State *state, char *buffer)
     if (!state->logged_in)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "332 Need account for login.\r\n") < 0)
+                                 "530 Not logged in.\r\n") < 0)
         {
             return -1;
         }
@@ -296,7 +296,7 @@ int ftpTYPE(Command *cmd, State *state, char *buffer)
     if (!state->logged_in)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "332 Need account for login.\r\n") < 0)
+                                 "530 Not logged in.\r\n") < 0)
         {
             return -1;
         }
@@ -330,7 +330,7 @@ int ftpPORT(Command *cmd, State *state, char *buffer)
     if (!state->logged_in)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "332 Need account for login.\r\n") < 0)
+                                 "530 Not logged in.\r\n") < 0)
         {
             return -1;
         }
@@ -366,7 +366,7 @@ int ftpPASV(Command *cmd, State *state, char *buffer)
     if (!state->logged_in)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "332 Need account for login.\r\n") < 0)
+                                 "530 Not logged in.\r\n") < 0)
         {
             return -1;
         }
@@ -411,7 +411,7 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
     if (!state->logged_in)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "332 Need account for login.\r\n") < 0)
+                                 "530 Not logged in.\r\n") < 0)
         {
             return -1;
         }
@@ -422,7 +422,7 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
     if (state->mode == -1)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "500 Not PORT NOR PASS.\r\n") < 0)
+                                 "425 Not PORT NOR PASS.\r\n") < 0)
         {
             return -1;
         }
@@ -518,6 +518,7 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
                 return -1;
             }
         }
+        state->mode = -1;
         close(file);
         close(conn);
     }
@@ -540,7 +541,7 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
     if (!state->logged_in)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "332 Need account for login.\r\n") < 0)
+                                 "530 Not logged in.\r\n") < 0)
         {
             return -1;
         }
@@ -551,7 +552,7 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
     if (state->mode == -1)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "500 Not PORT NOR PASS.\r\n") < 0)
+                                 "425 Not PORT NOR PASS.\r\n") < 0)
         {
             return -1;
         }
@@ -649,6 +650,7 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
                 }
             }
         }
+        state->mode = -1;
         close(file);
         close(conn);
     }
@@ -683,7 +685,7 @@ int ftpMKD(Command *cmd, State *state, char *buffer)
     if (!state->logged_in)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "332 Need account for login.\r\n") < 0)
+                                 "530 Not logged in.\r\n") < 0)
         {
             return -1;
         }
@@ -740,7 +742,7 @@ int ftpCWD(Command *cmd, State *state, char *buffer)
     if (!state->logged_in)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "332 Need account for login.\r\n") < 0)
+                                 "530 Not logged in.\r\n") < 0)
         {
             return -1;
         }
@@ -811,7 +813,7 @@ int ftpPWD(Command *cmd, State *state, char *buffer)
     if (!state->logged_in)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "332 Need account for login.\r\n") < 0)
+                                 "530 Not logged in.\r\n") < 0)
         {
             return -1;
         }
@@ -838,4 +840,59 @@ int ftpPWD(Command *cmd, State *state, char *buffer)
     }
     return 0;
 }
-//
+
+// 显示当前目录下文件
+int ftpLIST(Command *cmd, State *state, char *buffer)
+{
+    // 判断是否登陆
+    if (!state->logged_in)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "530 Not logged in.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    if (writeCertainSentence(state->connection, buffer,
+                             "502 Not Support it.\r\n") < 0)
+    {
+        return -1;
+    }
+    return 0;
+}
+
+// 删除文件夹
+int ftpRMD(Command *cmd, State *state, char *buffer)
+{
+    // 判断是否登陆
+    if (!state->logged_in)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "530 Not logged in.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    // 删除文件夹
+    if (rmdir(cmd->arg) == -1)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "550 Cannot delete directory.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    // 回应消息
+    if (writeCertainSentence(state->connection, buffer,
+                             "250 Successfully remove directory.\r\n") < 0)
+    {
+        return -1;
+    }
+    return 0;
+}

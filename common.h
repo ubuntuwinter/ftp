@@ -94,8 +94,8 @@ int ftpQUIT(Command *cmd, State *state, char *buffer); // 退出
 int ftpMKD(Command *cmd, State *state, char *buffer);  // 创建文件夹
 int ftpCWD(Command *cmd, State *state, char *buffer);  // 进入文件夹
 int ftpPWD(Command *cmd, State *state, char *buffer);  // 显示当前目录
-int ftpLIST(Command *cmd, State *state, char *buffer); // 退出
-int ftpRMD(Command *cmd, State *state, char *buffer);  // 退出
+int ftpLIST(Command *cmd, State *state, char *buffer); // 显示当前目录下文件
+int ftpRMD(Command *cmd, State *state, char *buffer);  // 删除文件夹
 int ftpRNFR(Command *cmd, State *state, char *buffer); // 退出
 int ftpRNTO(Command *cmd, State *state, char *buffer); // 退出
 
