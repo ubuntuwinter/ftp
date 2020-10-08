@@ -1,7 +1,7 @@
 CC = gcc
 SOURCES = server.c function.c
 EXECUTABLE = server
-OPTION = -O2
+OPTION = -O2 -w
 PTHREAD = -lpthread
 
 $(EXECUTABLE): $(SOURCES)
