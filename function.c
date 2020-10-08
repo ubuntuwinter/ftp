@@ -341,6 +341,8 @@ int ftpPORT(Command *cmd, State *state, char *buffer)
         return 0;
     }
 
+    close(state->passive_connection);
+
     int ip1, ip2, ip3, ip4, p1, p2;
     if (sscanf(cmd->arg, "%d,%d,%d,%d,%d,%d", &ip1, &ip2, &ip3, &ip4, &p1, &p2) != 6)
     {
@@ -372,6 +374,8 @@ int ftpPASV(Command *cmd, State *state, char *buffer)
         }
         return 0;
     }
+
+    close(state->passive_connection);
 
     int port1 = 128 + (rand() % 64);
     int port2 = rand() % 256;
