@@ -155,10 +155,12 @@ void *createFTP(void *arg)
 {
 	int connfd = *(int *)arg; // 连接
 	char buffer[MAXBUF];	  // 缓存
+	char log[MAXBUF];		  // 日至
 	State state;			  // 服务状态
 	Command cmd;			  // 命令
 
 	memset(buffer, 0, MAXBUF);
+	memset(log, 0, MAXBUF);
 	memset(&state, 0, sizeof(State));
 	memset(&cmd, 0, sizeof(Command));
 
@@ -173,16 +175,17 @@ void *createFTP(void *arg)
 
 	while (readSentence(connfd, buffer) >= 0)
 	{
-		if (parseCmd(&cmd, buffer) == 0)
+		if (parseCmd(&cmd, buffer, log) == 0)
 		{
 			continue;
 		};
 		if (response(&cmd, &state, buffer) == 1)
 		{
-			writeLog("Success complete a FTP session.");
 			break;
 		}
 	}
+
+	writeLog(log);
 
 	close(connfd);
 	return NULL;

@@ -29,18 +29,16 @@ int getIndexInCmdList(char *cmd)
 }
 
 // 解析命令
-int parseCmd(Command *cmd, char *cmdString)
+int parseCmd(Command *cmd, char *cmdString, char *log)
 {
-    writeLog(cmdString);
+    strcat(log, cmdString);
+    strcat(log, "\n");
     return sscanf(cmdString, "%s %s", cmd->command, cmd->arg);
 }
 
 // 写日至文件
-void writeLog(char *cmdString)
+void writeLog(char *log)
 {
-    // 写入时间
-    static int writeTime = 0;
-
     // 打开文件
     FILE *file = fopen(logFile, "a");
     if (file == NULL)
@@ -49,19 +47,15 @@ void writeLog(char *cmdString)
         return;
     }
 
-    if (!writeTime)
-    {
-        // 写时间
-        time_t now;
-        struct tm *tm_now;
-        time(&now);
-        tm_now = localtime(&now);
-        fprintf(file, "\n%d-%d-%d %d:%d:%d\n", tm_now->tm_year + 1900, tm_now->tm_mon + 1, tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);
-        writeTime = 1;
-    }
+    // 写时间
+    time_t now;
+    struct tm *tm_now;
+    time(&now);
+    tm_now = localtime(&now);
+    fprintf(file, "%d-%d-%d %d:%d:%d\n", tm_now->tm_year + 1900, tm_now->tm_mon + 1, tm_now->tm_mday, tm_now->tm_hour, tm_now->tm_min, tm_now->tm_sec);
 
     // 写命令记录
-    fprintf(file, "%s\n", cmdString);
+    fprintf(file, "%s\n", log);
 
     // 关闭文件
     fclose(file);

@@ -74,8 +74,8 @@ void *createFTP(void *arg);                                     // 创建FTP会�
 
 // function.c中定义的函数
 int getIndexInCmdList(char *cmd);                              // 获取命令对应的序号
-int parseCmd(Command *cmd, char *cmdString);                   // 解析命令
-void writeLog(char *cmdString);                                // 写日志文件
+int parseCmd(Command *cmd, char *cmdString, char *log);        // 解析命令
+void writeLog(char *log);                                      // 写日志文件
 int writeSentence(int connfd, char *buffer, int len);          // 发送字符串到socket
 int writeCertainSentence(int connfd, char *buffer, char *str); // 发送特定字符串
 int readSentence(int connfd, char *buffer);                    // 从socket接收字符串
