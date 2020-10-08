@@ -1,7 +1,8 @@
 #include "common.h" // include库文件与函数声明
 
-int port = 21;			 // 默认端口号
-char *rootPath = "/tmp"; // 默认根目录文件夹
+char *logFile = "/tmp/log"; // 日志文件目录
+int port = 21;				// 默认端口号
+char *rootPath = "/tmp";	// 默认根目录文件夹
 
 int main(int argc, char **argv)
 {
@@ -9,6 +10,12 @@ int main(int argc, char **argv)
 	{
 		return 1;
 	}; // 处理输入参数
+
+	if (chdir(rootPath) == -1)
+	{
+		printf("Wrong to enter rootPath!\n");
+		return -1;
+	}
 
 	int listenfd; // 监听ftp请求的socket
 	if ((listenfd = initializeListenSocket(port)) < 0)

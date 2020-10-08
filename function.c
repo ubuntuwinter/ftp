@@ -2,6 +2,7 @@
 
 // 全局变量
 extern char *rootPath;
+extern char *logFile;
 
 // 命令列表映射
 const char *cmdName[] = {
@@ -11,9 +12,6 @@ const char *cmdName[] = {
 
 // 欢迎信息
 const char *welcome = "Anonymous FTP server ready.\r\n";
-
-// 日志文件
-const char *logFile = "./log";
 
 // 获取命令对应的序号
 int getIndexInCmdList(char *cmd)
@@ -440,12 +438,12 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
     off_t off = 0;           // off
 
     // 文件路径需要加上文件夹名
-    strcpy(fileName, rootPath);
-    strcat(fileName, "/");
-    strcat(fileName, cmd->arg);
+    // strcpy(fileName, rootPath);
+    // strcat(fileName, "/");
+    // strcat(fileName, cmd->arg);
 
     // 首先判断权限与打开文件流
-    if ((access(fileName, R_OK) != -1) && (file = open(fileName, O_RDONLY)) != -1)
+    if ((access(cmd->arg, R_OK) != -1) && (file = open(cmd->arg, O_RDONLY)) != -1)
     {
         // 回应150
         if (writeCertainSentence(state->connection, buffer,
@@ -567,16 +565,16 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
     int pipefd[2];           // 管道
 
     // 文件路径加上文件夹名
-    strcpy(fileName, rootPath);
-    strcat(fileName, "/");
-    strcat(fileName, cmd->arg);
+    // strcpy(fileName, rootPath);
+    // strcat(fileName, "/");
+    // strcat(fileName, cmd->arg);
 
     // 创建文件
-    FILE *fp = fopen(fileName, "w");
+    FILE *fp = fopen(cmd->arg, "w");
     fclose(fp);
 
     // 先判断文件权限
-    if ((access(fileName, W_OK) != -1) && (file = open(fileName, O_WRONLY)) != -1)
+    if ((access(cmd->arg, W_OK) != -1) && (file = open(cmd->arg, O_WRONLY)) != -1)
     {
         // 回应125
         if (writeCertainSentence(state->connection, buffer,
@@ -692,6 +690,7 @@ int ftpMKD(Command *cmd, State *state, char *buffer)
         return 0;
     }
 
+    // 禁止绝对路径
     if (cmd->arg[0] == '/')
     {
         if (writeCertainSentence(state->connection, buffer,
@@ -702,17 +701,16 @@ int ftpMKD(Command *cmd, State *state, char *buffer)
         return 0;
     }
 
-    // 文件夹路径
-    char dirName[MAXCMD];
-    strcpy(dirName, rootPath);
-    strcat(dirName, "/");
-    strcat(dirName, cmd->arg);
-
-    if (mkdir(dirName, S_IRWXU) == 0)
+    // 创建文件夹
+    // 获取当前路径
+    char cwd[MAXCMD];
+    if (getcwd(cwd, MAXCMD) == NULL)
     {
-        strcpy(buffer, "257 \"");
-        strcat(buffer, dirName);
-        strcat(buffer, "\" directory created.\r\n");
+        return -1;
+    };
+    if (mkdir(cmd->arg, S_IRWXU) == 0)
+    {
+        sprintf(buffer, "257 \"%s/%s\" directory created.\r\n", cwd, cmd->arg);
         if (writeSentence(state->connection, buffer, strlen(buffer)) < 0)
         {
             return -1;
@@ -726,5 +724,74 @@ int ftpMKD(Command *cmd, State *state, char *buffer)
             return -1;
         }
     }
+
     return 0;
 }
+
+// 进入文件夹
+int ftpCWD(Command *cmd, State *state, char *buffer)
+{
+    // 判断是否登陆
+    if (!state->logged_in)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "332 Need account for login.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    // 禁止绝对路径
+    if (cmd->arg[0] == '/')
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "550 Failed to change directory.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    char cwd[MAXCMD];
+    if (getcwd(cwd, MAXCMD) == NULL)
+    {
+        return -1;
+    };
+
+    // 判断..
+    if (strcmp(cmd->arg, "..") == 0)
+    {
+        // 如果已经是在根目录，禁止 cd ..
+        if (strcmp(cwd, rootPath) == 0)
+        {
+            if (writeCertainSentence(state->connection, buffer,
+                                     "550 Failed to change directory.\r\n") < 0)
+            {
+                return -1;
+            }
+            return 0;
+        }
+    }
+
+    // 进入文件夹
+    if (chdir(cmd->arg) == -1)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "550 Failed to change directory.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    // 回应消息
+    sprintf(buffer, "250 directory changed to %s/%s\r\n", cwd, cmd->arg);
+    if (writeSentence(state->connection, buffer, strlen(buffer)) < 0)
+    {
+        return -1;
+    }
+    return 0;
+}
+
+//

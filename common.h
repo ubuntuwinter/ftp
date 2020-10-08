@@ -92,7 +92,7 @@ int ftpRETR(Command *cmd, State *state, char *buffer); // 下载
 int ftpSTOR(Command *cmd, State *state, char *buffer); // 上传
 int ftpQUIT(Command *cmd, State *state, char *buffer); // 退出
 int ftpMKD(Command *cmd, State *state, char *buffer);  // 创建文件夹
-int ftpCWD(Command *cmd, State *state, char *buffer);  // 退出
+int ftpCWD(Command *cmd, State *state, char *buffer);  // 进入文件夹
 int ftpPWD(Command *cmd, State *state, char *buffer);  // 退出
 int ftpLIST(Command *cmd, State *state, char *buffer); // 退出
 int ftpRMD(Command *cmd, State *state, char *buffer);  // 退出
