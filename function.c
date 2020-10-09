@@ -8,7 +8,7 @@ extern char *logFile;
 const char *cmdName[] = {
     "USER", "PASS", "RETR", "STOR", "QUIT", "SYST",
     "TYPE", "PORT", "PASV", "MKD", "CWD", "PWD", "LIST",
-    "RMD", "RNFR", "RNTO"};
+    "RMD", "RNFR", "DELE", "RNTO"};
 
 // 欢迎信息
 const char *welcome = "Anonymous FTP server ready.\r\n";
@@ -172,6 +172,9 @@ int response(Command *cmd, State *state, char *buffer)
         break;
     case RNTO:
         code = ftpRNTO(cmd, state, buffer);
+        break;
+    case DELE:
+        code = ftpDELE(cmd, state, buffer);
         break;
     default:
         if (writeCertainSentence(state->connection, buffer, "500 Invaild command.\r\n") < 0)
@@ -968,6 +971,40 @@ int ftpRNTO(Command *cmd, State *state, char *buffer)
 
     if (writeCertainSentence(state->connection, buffer,
                              "250 Successfully rename file.\r\n") < 0)
+    {
+        return -1;
+    }
+    return 0;
+}
+
+// 删除文件
+int ftpDELE(Command *cmd, State *state, char *buffer)
+{
+    // 判断是否登陆
+    if (!state->logged_in)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "530 Not logged in.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    // 删除文件
+    if (unlink(cmd->arg) == -1)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "550 Cannot delete directory.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    // 回应消息
+    if (writeCertainSentence(state->connection, buffer,
+                             "250 Successfully delete file.\r\n") < 0)
     {
         return -1;
     }

@@ -64,6 +64,7 @@ typedef enum
     RMD,
     RNFR,
     RNTO,
+    DELE,
     CMDLISTSIZE,
 } CmdList;
 
@@ -99,5 +100,6 @@ int ftpLIST(Command *cmd, State *state, char *buffer); // 显示当前目录下�
 int ftpRMD(Command *cmd, State *state, char *buffer);  // 删除文件夹
 int ftpRNFR(Command *cmd, State *state, char *buffer); // 重命名FROM
 int ftpRNTO(Command *cmd, State *state, char *buffer); // 重命名TO
+int ftpDELE(Command *cmd, State *state, char *buffer); // 删除文件
 
 #endif
