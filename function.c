@@ -534,7 +534,6 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
                 return -1;
             }
         }
-        state->mode = -1;
         close(file);
         close(conn);
     }
@@ -547,6 +546,7 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
             return -1;
         }
     }
+    state->mode = -1;
     return 0;
 }
 
@@ -666,7 +666,6 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
                 }
             }
         }
-        state->mode = -1;
         close(file);
         close(conn);
     }
@@ -679,6 +678,7 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
             return -1;
         }
     }
+    state->mode = -1;
     return 0;
 }
 
