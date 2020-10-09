@@ -813,8 +813,19 @@ int ftpCWD(Command *cmd, State *state, char *buffer)
         return 0;
     }
 
+    // 获取当前路径
+    if (getcwd(cwd, MAXCMD) == NULL)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "550 Failed to change directory.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    };
+
     // 回应消息
-    sprintf(buffer, "250 directory changed to %s/%s\r\n", cwd, cmd->arg);
+    sprintf(buffer, "250 directory changed to %s\r\n", cwd);
     if (writeSentence(state->connection, buffer, strlen(buffer)) < 0)
     {
         return -1;
