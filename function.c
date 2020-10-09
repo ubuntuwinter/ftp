@@ -111,16 +111,12 @@ int readSentence(int connfd, char *buffer)
             }
         }
     }
-    if (buffer[p - 2] == '\r')
+    while (buffer[p - 1] == '\r' || buffer[p - 1] == '\n')
     {
-        buffer[p - 2] = '\0';
-        return p - 2;
+        p--;
     }
-    else
-    {
-        buffer[p - 1] = '\0';
-        return p - 1;
-    }
+    buffer[p] = '\0';
+    return p;
 }
 
 // 返回相应操作
