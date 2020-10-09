@@ -885,6 +885,7 @@ int ftpLIST(Command *cmd, State *state, char *buffer)
         return 0;
     }
 
+    // 静止根目录访问
     if (strlen(cmd->arg) > 0 && cmd->arg[0] == '/')
     {
         if (writeCertainSentence(state->connection, buffer,
@@ -900,7 +901,7 @@ int ftpLIST(Command *cmd, State *state, char *buffer)
     if (getcwd(origin_cwd, MAXCMD) == NULL)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "550 1 Failed to list directory.\r\n") < 0)
+                                 "550 Failed to list directory.\r\n") < 0)
         {
             return -1;
         }
@@ -913,7 +914,7 @@ int ftpLIST(Command *cmd, State *state, char *buffer)
         if (chdir(cmd->arg) == -1)
         {
             if (writeCertainSentence(state->connection, buffer,
-                                     "550 2 Failed to list directory.\r\n") < 0)
+                                     "550 Failed to list directory.\r\n") < 0)
             {
                 return -1;
             }
@@ -925,7 +926,7 @@ int ftpLIST(Command *cmd, State *state, char *buffer)
     if (getcwd(cwd, MAXCMD) == NULL)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "550 3 Failed to list directory.\r\n") < 0)
+                                 "550 Failed to list directory.\r\n") < 0)
         {
             return -1;
         }
