@@ -29,6 +29,8 @@ int getIndexInCmdList(char *cmd)
 // 解析命令
 int parseCmd(Command *cmd, char *cmdString, char *log)
 {
+    memset(cmd->command, 0, 5);
+    memset(cmd->arg, 0, MAXCMD);
     strcat(log, cmdString);
     strcat(log, "\n");
     return sscanf(cmdString, "%s %s", cmd->command, cmd->arg);
@@ -463,12 +465,6 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
     // 首先判断权限与打开文件流
     if ((access(cmd->arg, R_OK) != -1) && (file = open(cmd->arg, O_RDONLY)) != -1)
     {
-        // 回应150
-        if (writeCertainSentence(state->connection, buffer,
-                                 "150 Opening BINARY mode data connection.\r\n") < 0)
-        {
-            return -1;
-        }
         /* 主动模式 */
         if (state->mode == 0)
         {
@@ -499,6 +495,12 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
         {
             conn = accept(state->passive_connection, NULL, NULL);
             close(state->passive_connection);
+        }
+        // 回应150
+        if (writeCertainSentence(state->connection, buffer,
+                                 "150 Opening BINARY mode data connection.\r\n") < 0)
+        {
+            return -1;
         }
         // 传输文件
         fstat(file, &stat_buf);
@@ -594,13 +596,6 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
     // 先判断文件权限
     if ((access(cmd->arg, W_OK) != -1) && (file = open(cmd->arg, O_WRONLY)) != -1)
     {
-        // 回应125
-        if (writeCertainSentence(state->connection, buffer,
-                                 "125 Data connection already open; transfer starting.\r\n") < 0)
-        {
-            close(file);
-            return -1;
-        }
         /* 主动模式 */
         if (state->mode == 0)
         {
@@ -631,6 +626,13 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
         {
             conn = accept(state->passive_connection, NULL, NULL);
             close(state->passive_connection);
+        }
+        // 回应125
+        if (writeCertainSentence(state->connection, buffer,
+                                 "125 Data connection already open; transfer starting.\r\n") < 0)
+        {
+            close(file);
+            return -1;
         }
         // 传输文件
         if (pipe(pipefd) == -1)
@@ -898,7 +900,7 @@ int ftpLIST(Command *cmd, State *state, char *buffer)
     if (getcwd(origin_cwd, MAXCMD) == NULL)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "550 Failed to list directory.\r\n") < 0)
+                                 "550 1 Failed to list directory.\r\n") < 0)
         {
             return -1;
         }
@@ -911,7 +913,7 @@ int ftpLIST(Command *cmd, State *state, char *buffer)
         if (chdir(cmd->arg) == -1)
         {
             if (writeCertainSentence(state->connection, buffer,
-                                     "550 Failed to list directory.\r\n") < 0)
+                                     "550 2 Failed to list directory.\r\n") < 0)
             {
                 return -1;
             }
@@ -923,7 +925,7 @@ int ftpLIST(Command *cmd, State *state, char *buffer)
     if (getcwd(cwd, MAXCMD) == NULL)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "550 Failed to list directory.\r\n") < 0)
+                                 "550 3 Failed to list directory.\r\n") < 0)
         {
             return -1;
         }
@@ -943,7 +945,7 @@ int ftpLIST(Command *cmd, State *state, char *buffer)
     if (!dir)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "550 Failed to list directory.\r\n") < 0)
+                                 "550 4 Failed to list directory.\r\n") < 0)
         {
             return -1;
         }
@@ -951,13 +953,7 @@ int ftpLIST(Command *cmd, State *state, char *buffer)
     }
 
     // 打开成功
-    // 回应150
-    if (writeCertainSentence(state->connection, buffer,
-                             "150 Here comes the directory listing.\r\n") < 0)
-    {
-        closedir(dir);
-        return -1;
-    }
+
     /* 主动模式 */
     if (state->mode == 0)
     {
@@ -988,6 +984,14 @@ int ftpLIST(Command *cmd, State *state, char *buffer)
     {
         conn = accept(state->passive_connection, NULL, NULL);
         close(state->passive_connection);
+    }
+
+    // 回应150
+    if (writeCertainSentence(state->connection, buffer,
+                             "150 Here comes the directory listing.\r\n") < 0)
+    {
+        closedir(dir);
+        return -1;
     }
 
     while (entry = readdir(dir))
