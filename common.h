@@ -11,6 +11,7 @@
 #include <netdb.h>      /* gethostbyname */
 #include <errno.h>
 #include <fcntl.h>
+#include <dirent.h>
 #include <sys/stat.h>
 #include <sys/sendfile.h>
 

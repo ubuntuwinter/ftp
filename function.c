@@ -8,7 +8,7 @@ extern char *logFile;
 const char *cmdName[] = {
     "USER", "PASS", "RETR", "STOR", "QUIT", "SYST",
     "TYPE", "PORT", "PASV", "MKD", "CWD", "PWD", "LIST",
-    "RMD", "RNFR", "DELE", "RNTO"};
+    "RMD", "RNFR", "RNTO", "DELE"};
 
 // 欢迎信息
 const char *welcome = "Anonymous FTP server ready.\r\n";
@@ -451,7 +451,6 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
 
     int conn;                // 连接
     struct sockaddr_in addr; // 地址
-    char fileName[MAXCMD];   // 文件名
     int file;                // 文件
     int sendBytes;           // 传输的字节
     struct stat stat_buf;    // buf
@@ -580,7 +579,6 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
 
     int conn;                // 连接
     struct sockaddr_in addr; // 地址
-    char fileName[MAXCMD];   // 文件名
     int file;                // 文件
     int pipefd[2];           // 管道
 
@@ -885,11 +883,162 @@ int ftpLIST(Command *cmd, State *state, char *buffer)
         return 0;
     }
 
+    if (strlen(cmd->arg) > 0 && cmd->arg[0] == '/')
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "550 Permission denied.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    // 原始目录
+    char origin_cwd[MAXCMD], cwd[MAXCMD];
+    if (getcwd(origin_cwd, MAXCMD) == NULL)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "550 Failed to list directory.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    };
+
+    // 切换目录
+    if (strlen(cmd->arg) > 0)
+    {
+        if (chdir(cmd->arg) == -1)
+        {
+            if (writeCertainSentence(state->connection, buffer,
+                                     "550 Failed to list directory.\r\n") < 0)
+            {
+                return -1;
+            }
+            return 0;
+        }
+    }
+
+    // 获取切换后的路径
+    if (getcwd(cwd, MAXCMD) == NULL)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "550 Failed to list directory.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    };
+
+    struct sockaddr_in addr; // 地址
+    struct dirent *entry;    // 文件夹入口
+    struct stat statbuf;
+    char per[10];
+    int conn;
+
+    // 打开文件夹
+    DIR *dir = opendir(cwd);
+
+    // 打开失败
+    if (!dir)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "550 Failed to list directory.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    // 打开成功
+    // 回应150
     if (writeCertainSentence(state->connection, buffer,
-                             "502 Not Support it.\r\n") < 0)
+                             "150 Here comes the directory listing.\r\n") < 0)
+    {
+        closedir(dir);
+        return -1;
+    }
+    /* 主动模式 */
+    if (state->mode == 0)
+    {
+        //创建socket
+        if ((conn = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1)
+        {
+            closedir(dir);
+            return -1;
+        }
+        //设置目标主机的ip和port
+        memset(&addr, 0, sizeof(addr));
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(state->port);
+        if (inet_pton(AF_INET, state->ip, &addr.sin_addr) <= 0)
+        { //转换ip地址:点分十进制-->二进制
+            closedir(dir);
+            return -1;
+        }
+        // 连接目标主机
+        if (connect(conn, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+        {
+            closedir(dir);
+            return -1;
+        }
+    }
+    /* 被动模式 */
+    else
+    {
+        conn = accept(state->passive_connection, NULL, NULL);
+        close(state->passive_connection);
+    }
+
+    while (entry = readdir(dir))
+    {
+        if (stat(entry->d_name, &statbuf) == -1)
+        {
+            continue;
+        }
+        else
+        {
+            // 转换文件权限
+            memset(per, 0, 10);
+            char str[4];
+            int read, write, exec;
+            int curper;
+            for (int i = 6; i >= 0; i -= 3)
+            {
+                curper = ((statbuf.st_mode & ALLPERMS) >> i) & 7;
+                memset(str, 0, 4);
+                read = (curper >> 2) & 1;
+                write = (curper >> 1) & 1;
+                exec = (curper >> 0) & 1;
+                sprintf(str, "%c%c%c", read ? 'r' : '-', write ? 'w' : '-', exec ? 'x' : '-');
+                strcat(per, str);
+            }
+            // 输出
+            dprintf(conn,
+                    "%c%s %5d %4d %4d %8d %s %s\r\n",
+                    (entry->d_type == DT_DIR) ? 'd' : '-',
+                    per, statbuf.st_nlink,
+                    statbuf.st_uid,
+                    statbuf.st_gid,
+                    statbuf.st_size,
+                    statbuf.st_mtime,
+                    entry->d_name);
+        }
+    }
+
+    close(conn);
+    closedir(dir);
+    state->mode = -1;
+
+    // 回应消息
+    if (writeCertainSentence(state->connection, buffer,
+                             "226 Directory list OK.\r\n") < 0)
     {
         return -1;
     }
+
+    // 返回原来的文件夹
+    chdir(cmd->arg);
     return 0;
 }
 
