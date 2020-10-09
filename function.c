@@ -994,6 +994,8 @@ int ftpLIST(Command *cmd, State *state, char *buffer)
         return -1;
     }
 
+    buffer[0] = '\0';
+
     while (entry = readdir(dir))
     {
         if (stat(entry->d_name, &statbuf) == -1)
@@ -1017,17 +1019,33 @@ int ftpLIST(Command *cmd, State *state, char *buffer)
                 sprintf(str, "%c%c%c", read ? 'r' : '-', write ? 'w' : '-', exec ? 'x' : '-');
                 strcat(per, str);
             }
+
+            // 转换文件修改时间
+            struct tm *t;
+            char time[80];
+            time[0] = '\0';
+            t = localtime(&statbuf.st_mtime);
+            strftime(time, 80, "%b %d %H:%M", t);
+
             // 输出
-            dprintf(conn,
-                    "%c%s %5d %4d %4d %8d %s %s\r\n",
+            sprintf(buffer + strlen(buffer),
+                    "%c%s %5lu %4d %4d %8ld %s %s\r\n",
                     (entry->d_type == DT_DIR) ? 'd' : '-',
                     per, statbuf.st_nlink,
                     statbuf.st_uid,
                     statbuf.st_gid,
                     statbuf.st_size,
-                    statbuf.st_mtime,
+                    time,
                     entry->d_name);
         }
+    }
+
+    // 返回消息
+    if (writeSentence(conn, buffer, strlen(buffer)) < 0)
+    {
+        close(conn);
+        closedir(dir);
+        return -1;
     }
 
     close(conn);
@@ -1042,7 +1060,9 @@ int ftpLIST(Command *cmd, State *state, char *buffer)
     }
 
     // 返回原来的文件夹
-    chdir(cmd->arg);
+    if (chdir(cmd->arg) == -1)
+    {
+    };
     return 0;
 }
 
