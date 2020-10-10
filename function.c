@@ -946,7 +946,7 @@ int ftpLIST(Command *cmd, State *state, char *buffer)
     if (!dir)
     {
         if (writeCertainSentence(state->connection, buffer,
-                                 "550 4 Failed to list directory.\r\n") < 0)
+                                 "550 Failed to list directory.\r\n") < 0)
         {
             return -1;
         }
