@@ -457,11 +457,6 @@ int ftpRETR(Command *cmd, State *state, char *buffer)
     int sendBytes;           // 传输的字节
     struct stat stat_buf;    // buf
 
-    // 文件路径需要加上文件夹名
-    // strcpy(fileName, rootPath);
-    // strcat(fileName, "/");
-    // strcat(fileName, cmd->arg);
-
     // 首先判断权限与打开文件流
     if ((access(cmd->arg, R_OK) != -1) && (file = open(cmd->arg, O_RDONLY)) != -1)
     {
@@ -583,11 +578,6 @@ int ftpSTOR(Command *cmd, State *state, char *buffer)
     struct sockaddr_in addr; // 地址
     int file;                // 文件
     int pipefd[2];           // 管道
-
-    // 文件路径加上文件夹名
-    // strcpy(fileName, rootPath);
-    // strcat(fileName, "/");
-    // strcat(fileName, cmd->arg);
 
     // 创建文件
     FILE *fp = fopen(cmd->arg, "w");
