@@ -1005,6 +1005,7 @@ int ftpLIST(Command *cmd, State *state, char *buffer)
         }
         else
         {
+            // 参考博客：https://blog.csdn.net/qq_43648751/article/details/104222145
             // 转换文件权限
             memset(per, 0, 10);
             char str[4];
