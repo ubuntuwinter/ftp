@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	if (getcwd(rootPath, MAXCMD))
+	if (getcwd(rootPath, MAXCMD) == -1)
 	{
 		printf("Wrong to get rootPath!\n");
 		return -1;
