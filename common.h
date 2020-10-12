@@ -70,10 +70,10 @@ typedef enum
 } CmdList;
 
 // server.c中定义的函数
-void argError(int argc, char **argv);                          // 参数错误处理
-int dealCmd(int argc, char **argv, int *port, char *rootPath); // 处理输入参数
-int initializeListenSocket(int port);                          // 初始化监听Socket
-void *createFTP(void *arg);                                    // 创建FTP会话
+void argError(int argc, char **argv);                           // 参数错误处理
+int dealCmd(int argc, char **argv, int *port, char **rootPath); // 处理输入参数
+int initializeListenSocket(int port);                           // 初始化监听Socket
+void *createFTP(void *arg);                                     // 创建FTP会话
 
 // function.c中定义的函数
 int getIndexInCmdList(char *cmd);                              // 获取命令对应的序号

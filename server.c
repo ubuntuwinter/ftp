@@ -2,13 +2,11 @@
 
 char *logFile = "/tmp/log"; // 日志文件目录
 int port = 21;				// 默认端口号
-char rootPath[MAXCMD];		// 默认根目录文件夹
+char *rootPath = "/tmp";	// 默认根目录文件夹
 
 int main(int argc, char **argv)
 {
-	strcpy(rootPath, "\tmp");
-
-	if (!dealCmd(argc, argv, &port, rootPath))
+	if (!dealCmd(argc, argv, &port, &rootPath))
 	{
 		return 1;
 	}; // 处理输入参数
@@ -16,12 +14,6 @@ int main(int argc, char **argv)
 	if (chdir(rootPath) == -1)
 	{
 		printf("Wrong to enter rootPath!\n");
-		return -1;
-	}
-
-	if (getcwd(rootPath, MAXCMD) == -1)
-	{
-		printf("Wrong to get rootPath!\n");
 		return -1;
 	}
 
@@ -70,7 +62,7 @@ void argError(int argc, char **argv)
 }
 
 // 处理输入参数
-int dealCmd(int argc, char **argv, int *port, char *rootPath)
+int dealCmd(int argc, char **argv, int *port, char **rootPath)
 {
 
 	if (argc > 5)
@@ -108,7 +100,7 @@ int dealCmd(int argc, char **argv, int *port, char *rootPath)
 				}
 				else
 				{
-					strcpy(rootPath, argv[i + 1]);
+					*rootPath = argv[i + 1];
 				}
 			}
 			else
@@ -181,12 +173,6 @@ void *createFTP(void *arg)
 
 	state.mode = -1;
 	state.connection = connfd;
-
-	if (chdir(rootPath) == -1)
-	{
-		printf("Wrong to enter rootPath!\n");
-		return -1;
-	}
 
 	if (ftpWelcome(&state, buffer) < 0)
 	{
