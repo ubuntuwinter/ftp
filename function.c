@@ -995,6 +995,10 @@ int ftpLIST(Command *cmd, State *state, char *buffer)
         }
         else
         {
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            {
+                continue;
+            }
             // 参考博客：https://blog.csdn.net/qq_43648751/article/details/104222145
             // 转换文件权限
             memset(per, 0, 10);
@@ -1107,6 +1111,11 @@ int ftpRNFR(Command *cmd, State *state, char *buffer)
     }
 
     strcpy(state->filename, cmd->arg);
+    if (writeCertainSentence(state->connection, buffer,
+                             "350 Ready for RNTO.\r\n") < 0)
+    {
+        return -1;
+    }
     return 0;
 }
 
@@ -1118,6 +1127,16 @@ int ftpRNTO(Command *cmd, State *state, char *buffer)
     {
         if (writeCertainSentence(state->connection, buffer,
                                  "530 Not logged in.\r\n") < 0)
+        {
+            return -1;
+        }
+        return 0;
+    }
+
+    if (strlen(state->filename) == 0)
+    {
+        if (writeCertainSentence(state->connection, buffer,
+                                 "500 RNFR first.\r\n") < 0)
         {
             return -1;
         }
