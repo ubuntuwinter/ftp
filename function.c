@@ -8,7 +8,7 @@ extern char *logFile;
 const char *cmdName[] = {
     "USER", "PASS", "RETR", "STOR", "QUIT", "SYST",
     "TYPE", "PORT", "PASV", "MKD", "CWD", "PWD", "LIST",
-    "RMD", "RNFR", "RNTO", "DELE"};
+    "RMD", "RNFR", "RNTO", "DELE", "ABOR"};
 
 // 欢迎信息
 const char *welcome = "Anonymous FTP server ready.\r\n";
@@ -177,6 +177,9 @@ int response(Command *cmd, State *state, char *buffer)
         break;
     case DELE:
         code = ftpDELE(cmd, state, buffer);
+        break;
+    case ABOR:
+        code = ftpABOR(cmd, state, buffer);
         break;
     default:
         if (writeCertainSentence(state->connection, buffer, "500 Invaild command.\r\n") < 0)
@@ -1189,6 +1192,17 @@ int ftpDELE(Command *cmd, State *state, char *buffer)
     // 回应消息
     if (writeCertainSentence(state->connection, buffer,
                              "250 Successfully delete file.\r\n") < 0)
+    {
+        return -1;
+    }
+    return 0;
+}
+
+int ftpABOR(Command *cmd, State *state, char *buffers)
+{
+    // 回应消息
+    if (writeCertainSentence(state->connection, buffers,
+                             "502 Not support it.\r\n") < 0)
     {
         return -1;
     }

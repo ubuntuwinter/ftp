@@ -66,6 +66,7 @@ typedef enum
     RNFR,
     RNTO,
     DELE,
+    ABOR,
     CMDLISTSIZE,
 } CmdList;
 
@@ -85,6 +86,7 @@ int readSentence(int connfd, char *buffer);                    // 从socket接�
 int response(Command *cmd, State *state, char *buffer);        // 返回相应操作
 
 int ftpWelcome(State *state, char *buffer);            // 发送欢迎信息
+int ftpABOR(Command *cmd, State *state, char *buffer); // 中止
 int ftpUSER(Command *cmd, State *state, char *buffer); // 登陆
 int ftpPASS(Command *cmd, State *state, char *buffer); // 输入密码
 int ftpSYST(Command *cmd, State *state, char *buffer); // 显示系统信息
