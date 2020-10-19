@@ -182,6 +182,10 @@ void *createFTP(void *arg)
 
 	while (readSentence(connfd, buffer) >= 0)
 	{
+		if (strlen(buffer) == 0)
+		{
+			break;
+		}
 		if (parseCmd(&cmd, buffer, log) == 0)
 		{
 			continue;
